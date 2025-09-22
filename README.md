@@ -39,7 +39,7 @@ make build
 
 ### Installation
 ```bash
-sudo dpkg -i ../truenas-openssl-provider-fips_3.1.2-1_*.deb
+sudo dpkg -i ../truenas-openssl-provider-fips_3.1.2_*.deb
 ```
 
 Or using make:
