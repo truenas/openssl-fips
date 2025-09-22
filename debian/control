@@ -1,0 +1,22 @@
+Source: truenas-openssl-provider-fips
+Section: utils
+Priority: optional
+Maintainer: TrueNAS Engineering <dev@truenas.com>
+Build-Depends: debhelper-compat (= 13),
+               wget,
+               build-essential,
+               libssl-dev,
+               perl
+Standards-Version: 4.6.2
+
+Package: truenas-openssl-provider-fips
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, openssl (>= 3.0.0)
+Conflicts: openssl-provider-fips
+Description: FIPS 140-3 validated cryptographic module for OpenSSL
+ This package provides the FIPS 140-3 validated cryptographic module
+ for OpenSSL 3.x. It includes the FIPS provider (fips.so) and its
+ configuration file (fipsmodule.cnf) for use with OpenSSL applications
+ requiring FIPS compliance.
+ .
+ This is a TrueNAS specific build of the OpenSSL FIPS provider module.

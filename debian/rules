@@ -1,0 +1,53 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DH_VERBOSE = 1
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+# Most recent validated FIPS (https://openssl-library.org/source/)
+# DO NOT CHANGE THIS UNLESS PROMPTED BY SECURITY TEAM
+FIPS_VERSION = 3.1.2
+ODIR = ossl
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	# No configure needed
+
+override_dh_auto_build:
+	# Download and extract OpenSSL source
+	mkdir -p $(ODIR)
+	wget -q https://www.openssl.org/source/openssl-$(FIPS_VERSION).tar.gz
+	tar xf openssl-$(FIPS_VERSION).tar.gz --strip-components=1 -C $(ODIR)
+	rm openssl-$(FIPS_VERSION).tar.gz
+	# Configure and build with FIPS enabled
+	cd $(ODIR) && ./Configure enable-fips --prefix=/usr --libdir=lib/$(DEB_HOST_MULTIARCH)
+	$(MAKE) -C $(ODIR) -j$$(nproc)
+
+override_dh_auto_install:
+	# Create necessary directories
+	mkdir -p debian/truenas-openssl-provider-fips/usr/lib/$(DEB_HOST_MULTIARCH)/ossl-modules
+	mkdir -p debian/truenas-openssl-provider-fips/usr/lib/ssl
+	# Copy FIPS provider and configuration
+	cp $(ODIR)/providers/fips.so debian/truenas-openssl-provider-fips/usr/lib/$(DEB_HOST_MULTIARCH)/ossl-modules/fips.so
+	cp $(ODIR)/providers/fipsmodule.cnf debian/truenas-openssl-provider-fips/usr/lib/ssl/fipsmodule.cnf
+	# Set proper permissions
+	chmod 644 debian/truenas-openssl-provider-fips/usr/lib/$(DEB_HOST_MULTIARCH)/ossl-modules/fips.so
+	chmod 644 debian/truenas-openssl-provider-fips/usr/lib/ssl/fipsmodule.cnf
+
+override_dh_auto_test:
+	# Dynamically find and run all FIPS-related tests
+	cd $(ODIR) && \
+	FIPS_TESTS=$$(find test/recipes -name '*fips*.t' -o -name '*fipsmodule*.t' | \
+		sed 's|test/recipes/[0-9]*-||g; s|\.t$$||g' | \
+		sort -u | tr '\n' ' ') && \
+	if [ -n "$$FIPS_TESTS" ]; then \
+		$(MAKE) test TESTS="$$FIPS_TESTS" || true; \
+	else \
+		echo "No FIPS tests found"; \
+	fi
+
+override_dh_auto_clean:
+	rm -rf $(ODIR)
+	dh_auto_clean
