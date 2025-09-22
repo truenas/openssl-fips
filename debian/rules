@@ -43,7 +43,7 @@ override_dh_auto_test:
 		sed 's|test/recipes/[0-9]*-||g; s|\.t$$||g' | \
 		sort -u | tr '\n' ' ') && \
 	if [ -n "$$FIPS_TESTS" ]; then \
-		$(MAKE) test TESTS="$$FIPS_TESTS" || true; \
+		$(MAKE) test TESTS="$$FIPS_TESTS"; \
 	else \
 		echo "No FIPS tests found"; \
 	fi
